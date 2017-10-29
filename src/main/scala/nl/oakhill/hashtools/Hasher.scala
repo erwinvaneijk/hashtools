@@ -1,4 +1,4 @@
-package nl.oakhill.hashtools.io
+package nl.oakhill.hashtools
 
 // On evaluation a Scheduler is needed
 import java.io.{File, FileInputStream}
@@ -10,6 +10,7 @@ import com.typesafe.scalalogging.LazyLogging
 import monix.eval.Task
 import monix.execution.Scheduler.Implicits.global
 import monix.reactive.Observable
+import nl.oakhill.hashtools.io.RichFile
 import resource._
 
 import scala.concurrent.Await

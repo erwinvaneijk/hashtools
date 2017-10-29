@@ -1,4 +1,4 @@
-package nl.oakhill.hashtools.io
+package nl.oakhill.hashtools
 
 import java.nio.file.Path
 

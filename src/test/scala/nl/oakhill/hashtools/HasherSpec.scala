@@ -2,7 +2,6 @@ package nl.oakhill.hashtools
 
 import java.io.{File, FileNotFoundException}
 
-import nl.oakhill.hashtools.io.Hasher
 import org.scalatest.{FlatSpec, Matchers}
 
 class HasherSpec extends FlatSpec with Matchers {
