@@ -8,8 +8,10 @@ import java.util.Base64
 
 import com.typesafe.scalalogging.LazyLogging
 import monix.eval.Task
-import monix.execution.Scheduler.Implicits.global
+import monix.execution.Ack.{Continue, Stop}
+import monix.execution.Scheduler
 import monix.reactive.Observable
+import monix.reactive.observers.Subscriber
 import nl.oakhill.hashtools.io.RichFile
 import resource._
 
@@ -19,7 +21,9 @@ import scala.util.{Failure, Success}
 
 case class HashResult(path: Path, algorithm: String, digest: String)
 
-class Hasher(input: Option[Path], output: Option[Path], verbose: Boolean) extends LazyLogging {
+
+class Hasher(input: Option[Path], output: Option[Path], verbose: Boolean, resultWriter: Subscriber[HashResult])(implicit s: Scheduler)
+  extends LazyLogging {
 
   val BLOCK_READ_SIZE: Int = 1024 * 1024
 
@@ -35,7 +39,9 @@ class Hasher(input: Option[Path], output: Option[Path], verbose: Boolean) extend
       Task(hashFile(file))
     }
     val t = processed.toListL.runAsync
-    Await.result(t, timeOut).flatten
+    val l = Await.result(t, timeOut).flatten
+    resultWriter.onComplete()
+    l
   }
 
   def hashFile(file: File): List[HashResult] = {
@@ -51,7 +57,14 @@ class Hasher(input: Option[Path], output: Option[Path], verbose: Boolean) extend
           algorithms.map {
             case (name: String, algorithm: MessageDigest) =>
               val digest = Base64.getEncoder.encodeToString(algorithm.digest())
-              HashResult(file.toPath, name, digest)
+              val hashResult = HashResult(file.toPath, name, digest)
+              resultWriter.onNext(hashResult).map {
+                case Continue =>
+                  Continue
+                case Stop =>
+                  Stop
+              }
+              hashResult
           }.toList
         }
 

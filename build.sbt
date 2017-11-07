@@ -10,6 +10,7 @@ lazy val root = (project in file(".")).
     name := "Hashtools",
     libraryDependencies ++= Seq(scalaTest % Test,
       scalaMock % Test,
+      "io.spray" %% "spray-json" % "1.3.3",
       "com.jsuereth" %% "scala-arm" % "2.0",
       "io.monix" %% "monix" % "2.3.0",
       "io.monix" %% "monix-cats" % "2.3.0",
