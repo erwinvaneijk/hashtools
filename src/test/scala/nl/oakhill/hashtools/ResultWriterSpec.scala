@@ -12,14 +12,14 @@ import org.scalatest.{FlatSpec, Matchers}
 class ResultWriterSpec extends FlatSpec with Matchers with MockFactory {
   "The ResultWriter" should "fulfill the contract" in {
     val outputStream = new ByteArrayOutputStream()
-    val hashResult = HashResult(new File("Hello.txt").toPath, "MD5", "KtGOyCwgr3tZJu2c6mru3Q==")
+    val hashResult = HashResult(new File("Hello.txt").toPath, Digest("MD5", "KtGOyCwgr3tZJu2c6mru3Q=="))
     val resultWriter = new ResultWriter(outputStream)(scheduler)
     val future = resultWriter.onNext(hashResult)
     resultWriter.onComplete()
 
     if (future.isCompleted) {
       val result = outputStream.toString("UTF-8")
-      result shouldEqual ("[\"Hello.txt\",\"MD5\",\"KtGOyCwgr3tZJu2c6mru3Q==\"],\r\n")
+      result shouldEqual ("[\"Hello.txt\",\"MD5\",\"2AD18EC82C20AF7B5926ED9CEA6AEEDD\"],\r\n")
     }
     else {
       fail("Test took too long.")

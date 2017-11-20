@@ -1,10 +1,12 @@
 package nl.oakhill.hashtools
 
-// On evaluation a Scheduler is needed
 import java.io.{File, FileInputStream}
 import java.nio.file.Path
 import java.security.MessageDigest
 import java.util.Base64
+import scala.concurrent.Await
+import scala.concurrent.duration._
+import scala.util.{Failure, Success}
 
 import com.typesafe.scalalogging.LazyLogging
 import monix.eval.Task
@@ -12,14 +14,12 @@ import monix.execution.Ack.{Continue, Stop}
 import monix.execution.Scheduler
 import monix.reactive.Observable
 import monix.reactive.observers.Subscriber
-import nl.oakhill.hashtools.io.RichFile
 import resource._
 
-import scala.concurrent.Await
-import scala.concurrent.duration._
-import scala.util.{Failure, Success}
+import nl.oakhill.hashtools.io.RichFile
 
-case class HashResult(path: Path, algorithm: String, digest: String)
+
+case class HashResult(path: Path, digest: Digest)
 
 
 class Hasher(input: Option[Path], output: Option[Path], verbose: Boolean, resultWriter: Subscriber[HashResult])(implicit s: Scheduler)
@@ -56,8 +56,8 @@ class Hasher(input: Option[Path], output: Option[Path], verbose: Boolean, result
         def conclude(): List[HashResult] = {
           algorithms.map {
             case (name: String, algorithm: MessageDigest) =>
-              val digest = Base64.getEncoder.encodeToString(algorithm.digest())
-              val hashResult = HashResult(file.toPath, name, digest)
+              val digest = Digest(name, algorithm.digest())
+              val hashResult = HashResult(file.toPath, digest)
               resultWriter.onNext(hashResult).map {
                 case Continue =>
                   Continue

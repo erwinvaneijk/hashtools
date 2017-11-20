@@ -7,8 +7,8 @@ import cats.implicits._
 import cats.syntax.writer
 import com.monovore.decline.{CommandApp, Opts}
 import monix.execution.Scheduler.Implicits.{global => scheduler}
-import monix.reactive.OverflowStrategy
 import monix.reactive.observers.{BufferedSubscriber, Subscriber}
+import monix.reactive.OverflowStrategy
 import nl.oakhill.hashtools.io.ResultWriter
 
 object Main extends CommandApp(
@@ -28,7 +28,7 @@ object Main extends CommandApp(
     val startDirectories =
       Opts.arguments[Path](metavar = "directory")
 
-    (inputOpt, outputOpt, verboseOption, overwriteOption, startDirectories).mapN({
+    (inputOpt, outputOpt, verboseOption, overwriteOption, startDirectories).mapN {
       (input, output, verbose, overwrite, directories) =>
         val writer: OutputStream = if (output.isDefined && CmdLineValidations.pathShouldNotExist(output) || overwrite) {
           new FileOutputStream(output.get.toFile)
@@ -43,8 +43,12 @@ object Main extends CommandApp(
         val bufferedWriter = BufferedSubscriber.synchronous[HashResult](resultWriter, OverflowStrategy.Unbounded)
         val hasher = new Hasher(input, output, verbose, bufferedWriter)(scheduler)
         directories.map(hasher.hashDirectory)
+        // Now compute the hash on the resulting file.
+        val hashResult = hasher.hashFile(output.get.toFile)
+        System.out.println(hashResult(0).path)
+        System.out.println(hashResult(0).digest.algorithm)
+        System.out.println(hashResult(0).digest.toString)
     }
-    )
   }
 )
 
