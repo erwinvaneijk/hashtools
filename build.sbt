@@ -8,6 +8,7 @@ lazy val root = (project in file(".")).
       version      := "0.1.0-SNAPSHOT"
     )),
     name := "Hashtools",
+    scalastyleConfig := file("project/scalastyle_config.xml"),
     libraryDependencies ++= Seq(scalaTest % Test,
       scalaMock % Test,
       "io.spray" %% "spray-json" % "1.3.3",
@@ -19,3 +20,9 @@ lazy val root = (project in file(".")).
       "ch.qos.logback" % "logback-classic" % "1.2.3"
       )
   )
+
+lazy val compileScalastyle = taskKey[Unit]("compileScalastyle")
+
+compileScalastyle := scalastyle.in(Compile).toTask("").value
+
+(compile in Compile) := ((compile in Compile) dependsOn compileScalastyle).value

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 Erwin van Eijk.
+ * Copyright (c) 2017, Erwin J. van Eijk.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,10 +19,6 @@ package nl.oakhill.hashtools
 import java.io.{File, FileInputStream}
 import java.nio.file.Path
 import java.security.MessageDigest
-import java.util.Base64
-import scala.concurrent.Await
-import scala.concurrent.duration._
-import scala.util.{Failure, Success}
 
 import com.typesafe.scalalogging.LazyLogging
 import monix.eval.Task
@@ -30,9 +26,12 @@ import monix.execution.Ack.{Continue, Stop}
 import monix.execution.Scheduler
 import monix.reactive.Observable
 import monix.reactive.observers.Subscriber
-import resource._
+import nl.oakhill.hashtools.io.RichFile.toRichFile
+import resource.managed
 
-import nl.oakhill.hashtools.io.RichFile
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
+import scala.util.{Failure, Success}
 
 
 case class HashResult(path: Path, digest: Digest)
@@ -41,17 +40,18 @@ case class HashResult(path: Path, digest: Digest)
 class Hasher(input: Option[Path], output: Option[Path], verbose: Boolean, resultWriter: Subscriber[HashResult])(implicit s: Scheduler)
   extends LazyLogging {
 
-  val BLOCK_READ_SIZE: Int = 1024 * 1024
+  private val numberOfParallelComputations = 10
+
+  private val BLOCK_READ_SIZE: Int = 1024 * 1024
 
   def hashDirectory(path: Path): List[HashResult] = hashDirectory(path, Duration.Inf)
 
   def hashDirectory(path: Path, timeOut: Duration): List[HashResult] = {
-    import RichFile._
     logger.info(s"Looking at $path")
     val files = path.toFile.andTree(_.isFile)
     logger.info(s"${files.size} entries")
     val source = Observable.fromIterable[File](files)
-    val processed = source.mapAsync(parallelism = 10) { file =>
+    val processed = source.mapAsync(parallelism = numberOfParallelComputations) { file =>
       Task(hashFile(file))
     }
     val t = processed.toListL.runAsync
@@ -87,7 +87,7 @@ class Hasher(input: Option[Path], output: Option[Path], verbose: Boolean, result
         def read(): List[HashResult] = input.read(buffer) match {
           case -1 =>
             conclude()
-          case n =>
+          case n: Int =>
             algorithms.foreach { case (_: String, algorithm: MessageDigest) =>
               algorithm.update(buffer, 0, n)
             }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 Erwin van Eijk.
+ * Copyright (c) 2017, Erwin J. van Eijk.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,20 +16,17 @@
 
 package nl.oakhill.hashtools.io
 
-import java.io.{FileOutputStream, OutputStream}
+import java.io.OutputStream
 import java.nio.charset.StandardCharsets
-import java.nio.file.Path
-
-import cats.syntax.writer
-import monix.execution.{Ack, Scheduler}
-import monix.execution.Ack.Continue
-import monix.reactive.Observer
-import monix.reactive.observers.Subscriber
-import nl.oakhill.hashtools.HashResult
-import spray.json._
-import spray.json.DefaultJsonProtocol._
 
 import scala.concurrent.Future
+import monix.execution.{Ack, Scheduler}
+import monix.execution.Ack.Continue
+import monix.reactive.observers.Subscriber
+import spray.json._
+
+import nl.oakhill.hashtools.io.HashResultJsonProtocol._
+import nl.oakhill.hashtools.HashResult
 
 
 class ResultWriter(writer: OutputStream)(implicit s: Scheduler) extends Subscriber[HashResult] {
@@ -37,7 +34,6 @@ class ResultWriter(writer: OutputStream)(implicit s: Scheduler) extends Subscrib
   override implicit def scheduler: Scheduler = s
 
   override def onNext(elem: HashResult): Future[Ack] = {
-    import nl.oakhill.hashtools.io.HashResultJsonProtocol._
     val encoded = elem.toJson
     writer.write(encoded.compactPrint.getBytes(StandardCharsets.UTF_8))
     writer.write(Array[Byte](',', '\r', '\n'))

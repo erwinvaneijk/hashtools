@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 Erwin van Eijk.
+ * Copyright (c) 2017, Erwin J. van Eijk.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,10 +29,21 @@ import spray.json.{DefaultJsonProtocol, JsArray, JsString, JsValue, RootJsonForm
   */
 object HashResultJsonProtocol extends DefaultJsonProtocol {
   implicit object HashResultJsonFormat extends RootJsonFormat[HashResult] {
-    def write(h: HashResult) =
+    /**
+      * Convert a hashvalue into a valid JSON object.
+      * @param h the hashvalue to convert
+      * @return a json string
+      */
+    def write(h: HashResult): JsValue =
         JsArray(JsString(h.path.toString), JsString(h.digest.algorithm), JsString(h.digest.toString))
 
-    def read(value: JsValue) = value match {
+    /**
+      * Convert a json-formatted string into a HashResult object.
+      *
+      * @param value the string to convert
+      * @return a HashResult instace.
+      */
+    def read(value: JsValue): HashResult = value match {
       case JsArray(Vector(JsString(path), JsString(algorithm), JsString(digest))) =>
         HashResult(new File(path).toPath, Digest(algorithm, digest))
       case _ =>

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 Erwin van Eijk.
+ * Copyright (c) 2017, Erwin J. van Eijk.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,11 +18,18 @@ package nl.oakhill.hashtools
 
 import java.util.Base64
 
-class Digest(val algorithm: String, private val digest: Array[Byte]) {
+private[hashtools] trait DigestIdentifiers {
+  val MD5_IDENTIFIER = "MD5"
+  val SHA1_IDENTIFIER = "SHA-1"
+  val SHA256_IDENTIFIER = "SHA-256"
+}
+
+class Digest(val algorithm: String, private val digest: Array[Byte]) extends DigestIdentifiers  {
   private val hexArray = "0123456789ABCDEF".toCharArray
 
   override def toString : String = {
-    if (algorithm == "MD5") {
+
+    if (algorithm == MD5_IDENTIFIER) {
       toHex
     } else {
       toBase64
@@ -56,17 +63,17 @@ class Digest(val algorithm: String, private val digest: Array[Byte]) {
 }
 
 
-object Digest {
+object Digest extends DigestIdentifiers {
   def apply(algorithm: String, digest: Array[Byte]) : Digest = new Digest(algorithm, digest)
 
   def apply(algorithm: String, string: String) : Digest = {
     new Digest(algorithm,
-      if (algorithm == "MD5") {
+      if (algorithm == MD5_IDENTIFIER) {
         convertMd5(string)
       }
-      else if (algorithm == "SHA-1"){
+      else if (algorithm == SHA1_IDENTIFIER){
         convertSha1(string)
-      } else if  (algorithm == "SHA-256") {
+      } else if  (algorithm == SHA256_IDENTIFIER) {
         convertSha256(string)
       } else {
         throw new IllegalArgumentException(s"algorithm ${algorithm} not supported")
@@ -74,9 +81,11 @@ object Digest {
     )
   }
 
-  private def convertMd5(string: String) = convertString("MD5", string, 32, 24)
-  private def convertSha1(string: String) = convertString("SHA-1", string, 40, 28)
-  private def convertSha256(string: String) = convertString("SHA-256", string, 64, 44)
+  private def convertMd5(string: String) = convertString(MD5_IDENTIFIER, string, 32, 24)
+
+  private def convertSha1(string: String) = convertString(SHA1_IDENTIFIER, string, 40, 28)
+
+  private def convertSha256(string: String) = convertString(SHA256_IDENTIFIER, string, 64, 44)
 
   private def convertString(algorithm: String, string: String, hexSize: Int, base64Size: Int): Array[Byte] = {
     string.length match {
