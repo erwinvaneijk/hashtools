@@ -37,7 +37,7 @@ class HasherSpec extends FlatSpec with Matchers with MockFactory {
     val result = resultList.filter(_.digest.algorithm == "MD5").head
     result.path should be (new File("src/main/resources/logback.xml").toPath)
     result.digest.algorithm should be ("MD5")
-    result.digest.toBase64 should be ("fbLsI60dVB2FwOOlQdmtpQ==")
+    result.digest.toBase64 should be ("RoOvH03A1cRLSJORkm5CZA==")
   }
 
   it should "have a hashFile that handles non-existing files" in {
@@ -57,6 +57,6 @@ class HasherSpec extends FlatSpec with Matchers with MockFactory {
     val resultFile = result.head
     resultFile.path should be (new File("src/main/resources/logback.xml").toPath)
     resultFile.digest.algorithm should be ("MD5")
-    resultFile.digest.toBase64 should be ("fbLsI60dVB2FwOOlQdmtpQ==")
+    resultFile.digest.toBase64 should be ("RoOvH03A1cRLSJORkm5CZA==")
   }
 }
