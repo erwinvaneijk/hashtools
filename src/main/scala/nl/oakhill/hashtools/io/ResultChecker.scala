@@ -16,32 +16,33 @@
 
 package nl.oakhill.hashtools.io
 
-import java.io.OutputStream
-import java.nio.charset.StandardCharsets
-
 import cats.data.State
 import scala.concurrent.Future
 import monix.execution.{Ack, Scheduler}
 import monix.execution.Ack.Continue
 import monix.reactive.observers.Subscriber
-import spray.json._
 
-import nl.oakhill.hashtools.io.HashResultJsonProtocol._
 import nl.oakhill.hashtools.HashResult
 
 
 /**
- * This class saves the state of all the comparisons.
- */
+  * This class saves the state of all the comparisons.
+  *
+  * external: hashresults observed in the live filesystem
+  * internal: the set of hashresults that are remaining after validation
+  * validated: the set of hashresults that have been validated to be same
+  * duplicate: the set of hashresults that have been validated more than once
+  */
 case class ComparisonResult(external: Set[HashResult], internal: Set[HashResult], validated: Set[HashResult], duplicate: Set[HashResult])
 
 
 class ResultChecker(fileList: Set[HashResult])(implicit s: Scheduler) extends Subscriber[HashResult] {
-
+  private var state = ComparisonResult(Set.empty, fileList, Set.empty, Set.empty)
 
   override implicit def scheduler: Scheduler = s
 
   override def onNext(elem: HashResult): Future[Ack] = {
+    state = compareNextItem(elem, state)
     Continue
   }
 
@@ -51,7 +52,17 @@ class ResultChecker(fileList: Set[HashResult])(implicit s: Scheduler) extends Su
   override def onComplete(): Unit = {
   }
 
-  private def compareResult(hashResult: HashResult,
-    resultState: State[ComparisonResult]): State[ComparisonResult] = {
+  def comparisonResult: ComparisonResult = state
+
+  private def compareNextItem(hashResult: HashResult, state: ComparisonResult) = {
+      if (state.internal(hashResult) && state.validated(hashResult)) {
+        ComparisonResult(state.external + hashResult, state.internal - hashResult, state.validated, state.duplicate + hashResult)
+      }
+      else if (state.internal(hashResult)) {
+        ComparisonResult(state.external, state.internal - hashResult, state.validated + hashResult, state.duplicate)
+      }
+      else {
+        ComparisonResult(state.external + hashResult, state.internal, state.validated, state.duplicate)
+      }
   }
 }

@@ -26,18 +26,19 @@ import org.scalamock.scalatest.MockFactory
 import org.scalatest.{FlatSpec, Matchers}
 
 class ResultCheckerSpec extends FlatSpec with Matchers with MockFactory {
+  val hashResult = HashResult(new File("Hello.txt").toPath, Digest("MD5", "KtGOyCwgr3tZJu2c6mru3Q=="))
+
   "The ResultChecker" should "fulfill the contract" in {
-    val hashResult = HashResult(new File("Hello.txt").toPath, Digest("MD5", "KtGOyCwgr3tZJu2c6mru3Q=="))
-    val fileList = List[HashResult](hashResult)
+    val fileList = Set[HashResult](hashResult)
     val resultChecker = new ResultChecker(fileList)(scheduler)
     val future = resultChecker.onNext(hashResult)
     resultChecker.onComplete()
 
     if (future.isCompleted) {
       val comparisonResult = resultChecker.comparisonResult
-      comparisonResult.remainingInList should be (empty)
-      comparisonResult.remainingInSet should be (empty)
-      comparsionResult.validCheck should have size(1)
+      comparisonResult.internal should be (empty)
+      comparisonResult.external should be (empty)
+      comparisonResult.validated should have size 1
     }
     else {
       fail("Test took too long.")
@@ -45,25 +46,26 @@ class ResultCheckerSpec extends FlatSpec with Matchers with MockFactory {
   }
 
   it should "accept only continue" in {
-    val hashResult = HashResult(new File("Hello.txt").toPath, Digest("MD5", "KtGOyCwgr3tZJu2c6mru3Q=="))
-    val fileList = List[HashResult](hashResult)
+    val fileList = Set[HashResult](hashResult)
     val resultChecker = new ResultChecker(fileList)(scheduler)
     resultChecker.onComplete()
 
     val comparisonResult = resultChecker.comparisonResult
-    comparisonResult.remainingInList should have size 1
-    comparisonResult.remainingInSet should be (empty)
-    comparsionResult.validCheck should have size(1)
+    comparisonResult.internal should have size 1
+    comparisonResult.external should be (empty)
+    comparisonResult.validated should be (empty)
+    comparisonResult.duplicate should be (empty)
   }
 
   it should "accept only error" in {
-    val outputStream = new ByteArrayOutputStream()
-    val resultChecker = new ResultChecker(outputStream)(scheduler)
+    val fileList = Set[HashResult](hashResult)
+    val resultChecker = new ResultChecker(fileList)(scheduler)
     resultChecker.onError(new FileNotFoundException())
 
     val comparisonResult = resultChecker.comparisonResult
-    comparisonResult.remainingInList should have size 1
-    comparisonResult.remainingInSet should be (empty)
-    comparsionResult.validCheck should have size(1)
+    comparisonResult.internal should have size 1
+    comparisonResult.external should be (empty)
+    comparisonResult.validated should be (empty)
+    comparisonResult.duplicate should be (empty)
   }
 }
