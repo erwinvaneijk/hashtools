@@ -37,7 +37,7 @@ import scala.util.{Failure, Success}
 case class HashResult(path: Path, digest: Digest)
 
 
-class Hasher(input: Option[Path], output: Option[Path], verbose: Boolean, resultWriter: Subscriber[HashResult])(implicit s: Scheduler)
+class Hasher(output: Option[Path], verbose: Boolean, resultWriter: Subscriber[HashResult])(implicit s: Scheduler)
   extends LazyLogging {
 
   private val numberOfParallelComputations = 10

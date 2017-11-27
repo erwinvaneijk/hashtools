@@ -46,24 +46,12 @@ object Main extends CommandApp(
 
     (inputOpt, outputOpt, verboseOption, overwriteOption, startDirectories).mapN {
       (input, output, verbose, overwrite, directories) =>
-        val writer: OutputStream = if (output.isDefined && CmdLineValidations.pathShouldNotExist(output) || overwrite) {
-          new FileOutputStream(output.get.toFile)
-        } else if (output.isDefined && CmdLineValidations.pathShouldNotExist(output)) {
-          new FileOutputStream(output.get.toFile)
-        } else if (output.isDefined && CmdLineValidations.pathShouldNotExist(output) || !overwrite) {
-          throw new IllegalArgumentException("File {} already exists. Aborting.".format(output.get.toFile().getAbsolutePath))
-        } else {
-          System.out
+        if (output.isDefined) {
+          HashCreator(output, verbose, overwrite, directories)
         }
-        val resultWriter: Subscriber[HashResult] = new ResultWriter(writer)
-        val bufferedWriter = BufferedSubscriber.synchronous[HashResult](resultWriter, OverflowStrategy.Unbounded)
-        val hasher = new Hasher(input, output, verbose, bufferedWriter)(scheduler)
-        directories.map(hasher.hashDirectory)
-        // Now compute the hash on the resulting file.
-        val hashResult = hasher.hashFile(output.get.toFile)
-        System.out.println(hashResult(0).path)
-        System.out.println(hashResult(0).digest.algorithm)
-        System.out.println(hashResult(0).digest.toString)
+        else if (input.isDefined) {
+          HashValidator(input, verbose, directories)
+        }
     }
   }
 )
